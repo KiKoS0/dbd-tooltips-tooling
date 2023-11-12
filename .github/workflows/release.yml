@@ -1,0 +1,81 @@
+name: Release
+
+on:
+  workflow_dispatch:
+  push:
+    tags:
+      - "[0-9]+.[0-9]+.[0-9]+"
+
+jobs:
+  fetcher-and-release-pr:
+    name: Fetcher & Release
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0 
+      - uses: actions/setup-python@v4
+        with:
+          python-version: "3.11.6"
+      - name: Run image
+        uses: abatilo/actions-poetry@v2
+        with:
+          poetry-version: "1.7.0"
+
+      - uses: actions/cache@v3
+        name: Cache deps
+        with:
+          path: ./.venv
+          key: venv-${{ hashFiles('poetry.lock') }}
+
+      - name: Go fetch
+        run: make clean_fetch
+
+      - name: Send pull-request
+        run: |
+          LATEST_TAG=$(git describe --tags --always --abbrev=0)
+          REPOSITORY="KiKoS0/dbd-tooltips-data"
+          FOLDER="bin/$REPOSITORY"
+          BRANCH_NAME="chore-update-data-to-$LATEST_TAG"
+
+          # Clone the remote repository and change working directory to the
+          # folder it was cloned to.
+          git clone \
+            --depth=1 \
+            --branch=main \
+            https://kikos0:${{ secrets.ACCESS_TOKEN }}@github.com/$REPOSITORY \
+            $FOLDER
+
+          cd $FOLDER
+
+          # Setup the committers identity.
+          git config user.email "22998716+KiKoS0@users.noreply.github.com"
+          git config user.name "KiKoS"
+
+          # Create a new feature branch for the changes.
+          git checkout -b $BRANCH_NAME
+
+          # Update the script files to the latest version.
+          cp -R ../../../data/* .
+
+          # Commit the changes and push the feature branch to origin
+          git add .
+          git commit -m "chore: update data to $LATEST_TAG"
+          git push origin $BRANCH_NAME
+
+          # Store the PAT in a file that can be accessed by the
+          # GitHub CLI.
+          echo "${{ secrets.ACCESS_TOKEN }}" > token.txt
+
+          # Authorize GitHub CLI for the current repository and
+          # create a pull-requests containing the updates.
+          gh auth login --with-token < token.txt
+          gh pr create \
+            --body "" \
+            --title "chore: update data to $LATEST_TAG" \
+            --head "$BRANCH_NAME" \
+            --base "main"
+
+
+
+

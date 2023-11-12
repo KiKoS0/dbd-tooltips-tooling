@@ -1,0 +1,39 @@
+name: CI
+
+on: workflow_dispatch
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  fetcher:
+    name: Fetcher
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v4
+        with:
+          python-version: "3.11.6"
+      - name: Run image
+        uses: abatilo/actions-poetry@v2
+        with:
+          poetry-version: "1.7.0"
+
+      - uses: actions/cache@v3
+        name: Cache deps
+        with:
+          path: ./.venv
+          key: venv-${{ hashFiles('poetry.lock') }}
+
+      - name: Go fetch
+        run: make clean_fetch
+
+      - name: Zip result folder
+        run: zip -r dbd_tooltips_data.zip data
+
+      - name: Upload result
+        uses: actions/upload-artifact@v3
+        with:
+          name: dbd_tooltips_data
+          path: dbd_tooltips_data.zip
