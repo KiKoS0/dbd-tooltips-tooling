@@ -75,3 +75,29 @@ def minify(html):
         keep_comments=False,
         keep_spaces_between_attributes=False,
     )
+
+
+addon_rarities = ["common", "uncommon", "very-rare", "ultra-rare", "rare"]
+
+
+def addon_rarity(element):
+    background_element_classes = (
+        element.select(".game-element-container.addon-container")[0]
+        .find(True, recursive=False)
+        .get("class")
+    )
+    rarity_match = None
+    for rarity in addon_rarities:
+        if any(
+            re.search(rf"\b{rarity}\b", class_name)
+            for class_name in background_element_classes
+        ):
+            rarity_match = rarity
+            break
+
+    if rarity_match is None:
+        raise ValueError(
+            f"No addon rarity found. for: {element}\nclasses: {background_element_classes}"
+        )
+
+    return rarity_match

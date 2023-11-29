@@ -2,6 +2,8 @@ from pathlib import Path
 from PIL import Image
 import tempfile
 
+from slugify import slugify
+
 _backgrounds = [
     "assets/perk_bg_uncommon.png",
     "assets/perk_bg_rare.png",
@@ -15,7 +17,7 @@ _levels = [
 ]
 
 
-def generate_frames(input_img_path, folder_path):
+def generate_perk_frames(input_img_path, folder_path):
     Path(folder_path).mkdir(parents=True, exist_ok=True)
 
     frames = []
@@ -31,7 +33,7 @@ def generate_frames(input_img_path, folder_path):
     return frames
 
 
-def generate_gif(frame_paths, output_path):
+def generate_perk_gif(frame_paths, output_path):
     temp_files = [
         tempfile.NamedTemporaryFile(mode="wb", suffix=".png", delete=True)
         for _ in range(0, 3)
@@ -56,6 +58,20 @@ def generate_gif(frame_paths, output_path):
         image.close()
     for file in temp_files:
         file.close()
+
+
+def generate_addon_img(input_img_path, folder_path, output_path, rarity):
+    Path(folder_path).mkdir(parents=True, exist_ok=True)
+
+    addon_background = slugify(f"addon-#{rarity}", separator="_")
+    addon_background = f"assets/{addon_background}.png"
+
+    with Image.open(input_img_path) as input_img:
+        with Image.open(addon_background).resize((256, 256)) as bg_img:
+            output_img = _combine_imgs(input_img, bg_img)
+            output_img.save(output_path)
+
+    return output_path
 
 
 def _add_levels(frame_paths, output_frames):

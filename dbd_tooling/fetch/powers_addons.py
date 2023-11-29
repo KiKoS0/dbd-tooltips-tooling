@@ -10,6 +10,7 @@ from urllib.request import urljoin
 import aiohttp
 import requests
 from bs4 import BeautifulSoup
+from dbd_tooling.fetch.im_gen import generate_addon_img
 
 from dbd_tooling.fetch.shared import (
     DATA_FOLDER_PATH,
@@ -20,7 +21,7 @@ from dbd_tooling.fetch.shared import (
     powers_perks_json,
     powers_perks_path,
 )
-from dbd_tooling.fetch.utils import file_exists, slugify
+from dbd_tooling.fetch.utils import addon_rarity, file_exists, slugify
 
 icons = set()
 
@@ -68,21 +69,29 @@ async def dl_addons_icons(session, k, v):
     Path(addon_folder_path).mkdir(parents=True, exist_ok=True)
     for addon_id, addon_data in v["addons"].items():
         img_link = addon_data["img_src"]
-        addon_img_path = f"{addon_folder_path}/{slugify(addon_data['name'])}.png"
-        if not file_exists(addon_img_path):
+        addon_icon_path = f"{addon_folder_path}/{slugify(addon_data['name'])}_icon.png"
+        if img_link is None:
+            raise RuntimeError(f"Possibly missing image: {img_link}")
+        if not file_exists(addon_icon_path):
             print(f"Downloading {img_link}")
             try:
                 async with session.get(img_link) as resp:
-                    f = open(addon_img_path, "wb")
+                    f = open(addon_icon_path, "wb")
                     f.write(await resp.read())
                     f.close()
             except:
-                print(f"Failed to download: {img_link}")
+                print(f"Failed to download: {img_link}\nPath: {addon_icon_path}")
+                raise
         else:
             print(f"Exists: {img_link}")
-        res["addons"][addon_id]["img_path"] = os.path.relpath(
-            addon_img_path, os.getcwd()
+
+        addon_img_path = f"{addon_folder_path}/{slugify(addon_data['name'])}.png"
+        rarity = res["addons"][addon_id]["rarity"]
+        res["addons"][addon_id]["icon"] = addon_icon_path
+        res["addons"][addon_id]["img_path"] = generate_addon_img(
+            addon_icon_path, addon_folder_path, addon_img_path, rarity
         )
+
     return (k, res)
 
 
@@ -184,6 +193,7 @@ def get_killer_addons(soup):
             "description": addon_description,
             "img_src": perk_icon_webp_src,
             "img_alt": perk_icon_webp_alt,
+            "rarity": addon_rarity(columns[0]),
         }
     return addons
 

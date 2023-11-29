@@ -20,7 +20,7 @@ from dbd_tooling.fetch.shared import (
     survivors_perks_json,
     survivors_perks_path,
 )
-from dbd_tooling.fetch.im_gen import generate_frames, generate_gif
+from dbd_tooling.fetch.im_gen import generate_perk_frames, generate_perk_gif
 from dbd_tooling.fetch.utils import (
     file_exists,
     fix_description,
@@ -215,11 +215,11 @@ async def dl_perk_icon(session, folder_path, k, v):
                 f.write(await resp.read())
                 f.close()
 
-        res["frames"] = generate_frames(icon_path, perk_folder_path)
+        res["frames"] = generate_perk_frames(icon_path, perk_folder_path)
         res["icon"] = icon_path
         res["gif"] = f"{perk_folder_path}/{v['icon_alt']}.gif"
 
-        generate_gif(res["frames"], res["gif"])
+        generate_perk_gif(res["frames"], res["gif"])
     return (k, v)
 
 
