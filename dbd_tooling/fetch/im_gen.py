@@ -66,9 +66,17 @@ def generate_addon_img(input_img_path, folder_path, output_path, rarity):
     addon_background = slugify(f"addon-#{rarity}", separator="_")
     addon_background = f"assets/{addon_background}.png"
 
+    target_size = (300, 300)
     with Image.open(input_img_path) as input_img:
-        with Image.open(addon_background).resize((256, 256)) as bg_img:
-            output_img = _combine_imgs(input_img, bg_img)
+        with Image.open(addon_background) as bg_img:
+            padded_img = Image.new("RGBA", target_size, (0, 0, 0, 0))
+            paste_position = (
+                (target_size[0] - input_img.width) // 2,
+                (target_size[1] - input_img.height) // 2,
+            )
+            padded_img.paste(input_img, paste_position, input_img)
+
+            output_img = _combine_imgs(padded_img, bg_img)
             output_img.save(output_path)
 
     return output_path
@@ -81,7 +89,7 @@ def _add_levels(frame_paths, output_frames):
             output_img.save(output_frames[i])
 
 
-def _combine_imgs(foreground, background):
+def _combine_imgs(foreground, background, position=(0, 0)):
     if foreground.size != background.size:
         print("error: images can't have different sizes.")
         raise RuntimeError("Images can't have different sizes.")
@@ -92,10 +100,7 @@ def _combine_imgs(foreground, background):
         Image.new("RGBA", background.size), background.convert("RGBA")
     )
 
-    x = 0
-    y = 0
-
-    background.paste(foreground, (x, y), foreground)
+    background.paste(foreground, position, foreground)
     return background
 
 
