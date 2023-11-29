@@ -13,6 +13,7 @@ asyncio = "^3.4.3"
 aiohttp = "^3.8.6"
 minify-html = "^0.11.1"
 pillow = "^10.1.0"
+python-slugify = "^8.0.1"
 
 [build-system]
 requires = ["poetry-core"]
