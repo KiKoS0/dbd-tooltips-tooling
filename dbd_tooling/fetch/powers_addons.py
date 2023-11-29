@@ -175,7 +175,9 @@ def get_killer_addons(soup):
         )
 
         if img_soup := columns[0].find("img"):
-            perk_icon_webp_alt = img_soup["alt"]
+            perk_icon_webp_alt = (
+                img_soup["alt"].replace("IconAddon", "").strip().capitalize()
+            )
             perk_icon_webp_src = (
                 img_soup["src"]
                 if img_soup["src"].startswith("https")
