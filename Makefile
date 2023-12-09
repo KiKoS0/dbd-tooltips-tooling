@@ -19,4 +19,5 @@ fetch:
 	poetry run python -m dbd_tooling.aux.locale_gen
 	poetry run python -m dbd_tooling.fetch.locales.fr
 	poetry run python -m dbd_tooling.fetch.locales.de
+	poetry run python -m dbd_tooling.features.gen_feature_flags
 
