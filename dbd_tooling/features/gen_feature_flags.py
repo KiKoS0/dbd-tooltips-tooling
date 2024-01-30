@@ -6,7 +6,7 @@ from dbd_tooling.fetch.utils import file_exists
 
 feature_flags_path = f"{DATA_FOLDER_PATH}/feature_flags.json"
 
-feature_flags = {"disable-bugged-video-in-firefox": True}
+feature_flags = {"disable-bugged-video-in-firefox": False}
 
 Path(DATA_FOLDER_PATH).mkdir(parents=True, exist_ok=True)
 if not file_exists(feature_flags_path):
