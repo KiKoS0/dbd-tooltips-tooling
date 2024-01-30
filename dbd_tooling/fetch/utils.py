@@ -39,9 +39,7 @@ def file_exists(filename):
 
 
 def fix_description(html):
-    sp = BeautifulSoup(html, "html.parser")
-    formatted_html = sp("div", {"class": "formattedPerkDesc"})[0]
-    return fix_description_icons(formatted_html.prettify(formatter="html"))
+    return fix_description_icons(html)
 
 
 def fix_description_icons(html):
