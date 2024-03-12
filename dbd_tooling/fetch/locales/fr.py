@@ -22,20 +22,13 @@ killers_locale_perks_json = f"{perks_locale_folder_path}/killers_fr.json"
 
 def get_perk_data_internal(soup, link):
     try:
-        tables = soup.find_all("table", {"class": "wikitable"})
-        perk_table = tables[0]
-        rows = perk_table.find_all("tr")
-
         name = soup.find_all("h1", {"id": "firstHeading"})[0].text.strip()
 
-        desc = fix_description(
-            rows[3].find_all("td")[0].encode_contents().decode("utf-8")
-        )
-
+        desc = soup.find("div", {"class": "perkDesc"}).encode_contents().decode("utf-8")
+        desc = fix_description(desc)
         desc = re.sub(
             LINK_SRC_PATTERN, lambda x: f'src="images/icons/{x.group(2)}"', desc
         )
-
         desc = minify(desc)
 
         print(name)

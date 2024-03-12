@@ -84,11 +84,10 @@ async def get_perk_data(session, rel_link):
 
 
 def get_perk_data_internal(soup):
-    tables = soup.find_all("table", {"class": "wikitable"})
-    perk_table = tables[0]
-    rows = perk_table.find_all("tr")
-    img_col = rows[1].find_all("td")[0]
-    desc = rows[3].find_all("td")[0].encode_contents().decode("utf-8")
+    img_col = soup.find("div", {"class": "perkIcon"}).find(
+        "div", {"class": "perkIconImage"}
+    )
+    desc = soup.find("div", {"class": "perkDesc"}).encode_contents().decode("utf-8")
     desc = fix_description(desc)
     (wrapped_changelogs, changelogs) = get_perk_changelog(soup)
     desc += wrapped_changelogs
