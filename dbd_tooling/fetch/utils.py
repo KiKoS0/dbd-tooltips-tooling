@@ -61,6 +61,13 @@ def fix_description_icons(html):
         for key in drop_key_set:
             del img.attrs[key]
 
+    # There exists two icons for each platform (PC and mobile).
+    # The PC one had always been hidden by default in style but not
+    # anymore. it's now done with external CSS classes.
+    # So this should keep the old behavior.
+    for span in sp.find_all("span", {"class": "pcView pcIconLink"}):
+        span["style"] = "display: none;" + span.get("style", "")
+
     return sp.prettify(formatter="html")
 
 
