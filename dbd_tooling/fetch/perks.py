@@ -152,6 +152,9 @@ patch_notes_to_include = [
     "7.7.0",
     "7.7.1",
     "8.0.0",
+    "8.0.1",
+    "8.0.2",
+    "8.1.0",
 ]
 
 
@@ -168,9 +171,12 @@ def get_perk_changelog(soup):
                 patch_link_header.name = "a"
                 patch_link_header["style"] = "text-decoration: none;color: #e2ce97;"
                 res += latest_patch_span.prettify(formatter="html")
-                patch_notes = latest_patch_span.parent.find_next_sibling("ul")
-                # print(patch_notes)
-                # print(patch_link_header)
+
+                # Sometimes the patch notes have only one element which is put simply in a <p> tag
+                patch_notes = latest_patch_span.parent.find_next_sibling(
+                    "ul"
+                ) or latest_patch_span.parent.find_next_sibling("p")
+
                 res += patch_notes.prettify(formatter="html")
     return (html_to_add + res + "</div>" if res != "" else "", res)
 
