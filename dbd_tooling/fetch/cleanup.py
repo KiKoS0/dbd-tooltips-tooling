@@ -34,7 +34,7 @@ def main():
 
     dic = _remove_power_imgs(killers, "Pig", 1)
     dic = _remove_power_imgs(killers, "Knight", 3)
-    dic = _remove_power_imgs(killers, "Clown", 2)
+    dic = _remove_power_imgs(killers, "Jeffrey_Hawk", 2)
 
     if os.path.exists(powers_perks_json):
         os.remove(powers_perks_json)
