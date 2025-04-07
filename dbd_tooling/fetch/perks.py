@@ -122,17 +122,9 @@ def get_perk_data_internal(soup):
         perk_icon_webp_src = None
 
     # Translations
-    langs_div = soup.find("div", {"class": "page-header__languages"})
+    langs = soup.find_all("a", {"class": "interlanguage-link-target"})
+    langs = {lang["lang"]: absolute_link(lang["href"]) for lang in langs}
 
-    if langs_div:
-        langs = langs_div.findChildren(
-            "a", {"data-tracking-label": True}, recursive=True
-        )
-        langs = {l["data-tracking-label"][5:]: l["href"] for l in langs}
-    else:
-        langs = {}
-
-    # print(langs)
     return (perk_icon_webp_alt, perk_icon_webp_src, desc, changelogs, langs)
 
 
