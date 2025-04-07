@@ -26,6 +26,7 @@ from dbd_tooling.fetch.utils import (
     fix_description,
     fix_description_icons,
     read_json_dic,
+    remove_extension_if_exists,
     slugify,
     absolute_link,
 )
@@ -105,7 +106,7 @@ def get_perk_data_internal(soup):
     )
 
     if img_soup := img_col.find("img"):
-        perk_icon_webp_alt = (
+        perk_icon_webp_alt = remove_extension_if_exists(
             img_soup["alt"].replace("IconPerks", "").strip().capitalize()
         )
         perk_icon_webp_src = img_col.find("img")

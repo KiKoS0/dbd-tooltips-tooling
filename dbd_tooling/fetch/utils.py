@@ -119,3 +119,11 @@ def addon_rarity(element):
 def browser_user_agent():
     """Return a random user agent string."""
     return "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:137.0) Gecko/20100101 Firefox/137.0"
+
+
+def remove_extension_if_exists(path: str) -> str:
+    """Remove the file extension from the given path if it exists."""
+    path_obj = Path(path)
+    if path_obj.suffix:
+        return str(path_obj.with_suffix(""))
+    return str(path_obj)
