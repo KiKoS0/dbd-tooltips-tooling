@@ -136,22 +136,16 @@ def get_perk_data_internal(soup):
 
 
 patch_notes_to_include = [
-    "7.6.0",
-    "7.6.1",
-    "7.6.2",
-    "7.7.0",
-    "7.7.1",
-    "8.0.0",
-    "8.0.1",
-    "8.0.2",
-    "8.1.0",
-    "8.1.1",
-    "8.1.2",
-    "8.2.0",
     "8.3.0",
     "8.3.1",
     "8.3.2",
-    "8.4.0"
+    "8.4.0",
+    "8.4.1",
+    "8.4.2",
+    "8.5.0",
+    "8.5.1",
+    "8.5.2",
+    "8.6.0",
 ]
 
 
@@ -215,7 +209,7 @@ async def dl_perk_icon(session, folder_path, k, v):
     if v["icon_alt"]:
         icon_path = f"{perk_folder_path}/{v['icon_alt']}.png"
         if not file_exists(icon_path):
-            print(f'Downloading {v["icon_src"]}')
+            print(f"Downloading {v['icon_src']}")
             async with session.get(v["icon_src"]) as resp:
                 f = open(icon_path, "wb")
                 f.write(await resp.read())
