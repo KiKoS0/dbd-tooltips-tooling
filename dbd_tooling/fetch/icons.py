@@ -1,12 +1,11 @@
 import os
-import re
 from pathlib import Path
-from urllib.request import urlretrieve
+from urllib import request
+
+from dbd_tooling.fetch.utils import browser_user_agent
+from dbd_tooling.fetch.shared import path_src_reg
 
 Path(f"{os.getcwd()}/data/images/icons").mkdir(parents=True, exist_ok=True)
-
-link_src_pattern = r'([^"]*/images/\w+/\w+/([^/]+)/[^"]+)'
-link_src_reg = re.compile(link_src_pattern)
 
 paths = set()
 with open(f"{os.getcwd()}/data/icons.txt", encoding="utf-8") as f:
@@ -14,6 +13,12 @@ with open(f"{os.getcwd()}/data/icons.txt", encoding="utf-8") as f:
         paths.add(line.strip())
 
 for p in paths:
-    match = link_src_reg.match(p)
-    urlretrieve(p, f"data/images/icons/{match.group(2)}")
-    print(match.group(2))
+    match = path_src_reg.match(p)
+    req = request.Request(p, data=None, headers={"User-Agent": browser_user_agent()})
+
+    file_name = match.group(2)
+
+    with open(f"data/images/icons/{file_name}", "wb") as f:
+        f.write(request.urlopen(req).read())
+
+    print(file_name)

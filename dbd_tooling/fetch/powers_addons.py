@@ -1,4 +1,3 @@
-import os
 import asyncio
 import json
 import re
@@ -21,19 +20,20 @@ from dbd_tooling.fetch.shared import (
     powers_perks_json,
     powers_perks_path,
 )
-from dbd_tooling.fetch.utils import addon_rarity, file_exists, slugify
+from dbd_tooling.fetch.utils import (
+    addon_rarity,
+    browser_user_agent,
+    file_exists,
+    slugify,
+    absolute_link,
+)
 
 icons = set()
 
 
-def poor_demo(characters):
-    characters["Demogorgon"] = {"name": "Demogorgon", "link": "/wiki/The_Demogorgon"}
-    return characters
-
-
 def get_killer_powers(characters):
     res = {}
-    for k, v in poor_demo(characters).items():
+    for k, v in characters.items():
         res[k] = v
         res[k]["power_name"], res[k]["power_imgs"], res[k]["addons"] = get_killers_data(
             v["link"]
@@ -57,7 +57,12 @@ def dl_power_icons(killers):
             if not file_exists(power_img_path):
                 print(f"Downloading {img_link}")
                 f = open(power_img_path, "wb")
-                f.write(request.urlopen(img_link).read())
+
+                req = request.Request(
+                    img_link,
+                    headers={"User-Agent": browser_user_agent()},
+                )
+                f.write(request.urlopen(req).read())
                 f.close()
         res[k]["power_imgs_paths"] = power_paths
     return res
@@ -132,15 +137,18 @@ def get_killers_data(link):
     power_name = name_regex.match(correct_span.text.strip()).group(1)
 
     power_imgs = []
-    power_img = correct_span.parent.find_next_sibling("div", {"class": "floatright"})
-    while power_img is not None:
-        power_img_link = power_img.find("a")
-        if power_img_link.find("img") is not None:
-            power_img_link = power_img.find("a")["href"].replace(
-                "latest", "latest/scale-to-width-down/256"
-            )
-            power_imgs.append(power_img_link)
-        power_img = power_img.find_next_sibling("div", {"class": "floatright"})
+    power_img_div = correct_span.parent.find_next_sibling(
+        "div", {"class": "floatRight"}
+    )
+
+    if power_img_div is not None:
+        power_img_links = power_img_div.find_all("a")
+        for power_img_link in power_img_links:
+            if power_img_link.find("img") is not None:
+                power_img_url = absolute_link(
+                    power_img_link.find("img")["src"]
+                ).replace("latest", "latest/scale-to-width-down/256")
+                power_imgs.append(power_img_url)
 
     addons = get_killer_addons(soup)
 
@@ -162,7 +170,8 @@ def get_killer_addons(soup):
 
         imgs = addon_description.find_all("img")
         for img in imgs:
-            img["src"] = img["data-src"]
+            key = "data-src" if "data-src" in img.attrs else "src"
+            img["src"] = absolute_link(img[key])
 
         addon_description = addon_description.encode_contents().decode("utf-8")
 
@@ -179,8 +188,8 @@ def get_killer_addons(soup):
                 img_soup["alt"].replace("IconAddon", "").strip().capitalize()
             )
             perk_icon_webp_src = (
-                img_soup["src"]
-                if img_soup["src"].startswith("https")
+                absolute_link(img_soup["src"])
+                if img_soup["src"].startswith("/")
                 else img_soup["data-src"]
             )
             # Get a larger 256x256 image
@@ -233,13 +242,15 @@ async def main():
     res = (
         soup.find("div", {"id": "mw-content-text"})
         .find("div")
-        .findChildren("table", {"class": "wikitable sortable"}, recursive=False)
+        .findChildren(
+            "table", {"class": "wikitable overflowScroll sortable"}, recursive=False
+        )
     )
     if len(res) != 2:
         print("There is an error somewhere")
         raise RuntimeError("More than 2 tables in the wiki found")
-    surv_table, kill_table = [res[0], res[1]]
-    kill_perks, kill_characters = get_table_rows(kill_table)
+    _surv_table, kill_table = [res[0], res[1]]
+    _kill_perks, kill_characters = get_table_rows(kill_table)
 
     # Filter out killers (early on release) that don't have addons
     # del kill_characters['Dredge']

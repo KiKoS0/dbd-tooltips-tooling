@@ -27,6 +27,7 @@ from dbd_tooling.fetch.utils import (
     fix_description_icons,
     read_json_dic,
     slugify,
+    absolute_link,
 )
 
 icons = set()
@@ -94,7 +95,7 @@ def get_perk_data_internal(soup):
 
     all_matches = link_src_reg.findall(desc)
     _ = [icons.add(m[0]) for m in all_matches]
-    desc = re.sub(LINK_SRC_PATTERN, lambda x: f'src="images/icons/{x.group(2)}"', desc)
+    desc = re.sub(link_src_reg, lambda x: f'src="images/icons/{x.group(2)}"', desc)
 
     all_matches = link_src_reg.findall(changelogs)
     _ = [icons.add(m[0]) for m in all_matches]
@@ -110,7 +111,7 @@ def get_perk_data_internal(soup):
         perk_icon_webp_src = img_col.find("img")
 
         img_src_key = "data-src" if perk_icon_webp_src.has_attr("data-src") else "src"
-        perk_icon_webp_src = perk_icon_webp_src[img_src_key]
+        perk_icon_webp_src = absolute_link(perk_icon_webp_src[img_src_key])
 
         perk_icon_webp_src = re.sub(
             r"latest\/.*$", "latest/scale-to-width-down/256", perk_icon_webp_src
@@ -193,6 +194,26 @@ async def get_perks(perks):
     return res
 
 
+# # SYNC VERSION FOR DEBUGGING
+# async def get_perks(perks):
+#     res = {}
+#     async with aiohttp.ClientSession() as session:
+#         for k, v in perks.items():
+#             icon_alt, icon_src, desc, changelogs, locales = await get_perk_data(
+#                 session, v["link"]
+#             )
+
+#             res[k] = v
+#             res[k]["icon_alt"] = icon_alt
+#             res[k]["icon_src"] = icon_src
+#             res[k]["description"] = desc
+#             res[k]["changelogs"] = changelogs
+#             res[k]["locales"] = locales
+#             print(res[k]["icon_alt"])
+
+#     return res
+
+
 def save_perks_metadata(perks, file_path):
     Path(perks_folder_path).mkdir(parents=True, exist_ok=True)
     if not file_exists(file_path):
@@ -241,7 +262,9 @@ async def main():
     res = (
         soup.find("div", {"id": "mw-content-text"})
         .find("div")
-        .findChildren("table", {"class": "wikitable sortable"}, recursive=False)
+        .findChildren(
+            "table", {"class": "wikitable overflowScroll sortable"}, recursive=False
+        )
     )
     if len(res) != 2:
         print("There is an error somewhere")
@@ -270,6 +293,7 @@ async def main():
 
     for i in icons:
         print(i)
+
     with open(f"{DATA_FOLDER_PATH}/icons.txt", "w", encoding="utf-8") as f:
         for i in icons:
             f.write(f"{i}\n")

@@ -56,7 +56,9 @@ def fix_description_icons(html):
     }
     imgs = sp.find_all("img")
     for img in imgs:
-        img["src"] = img["data-src"]
+        key = "data-src" if "data-src" in img.attrs else "src"
+        img["src"] = absolute_link(img[key])
+
         drop_key_set = set(img.attrs) & filter_attr_name_set
         for key in drop_key_set:
             del img.attrs[key]
@@ -69,6 +71,12 @@ def fix_description_icons(html):
         span["style"] = "display: none;" + span.get("style", "")
 
     return sp.prettify(formatter="html")
+
+
+def absolute_link(link):
+    return (
+        link if link.startswith("https://") else f"https://deadbydaylight.wiki.gg{link}"
+    )
 
 
 def minify(html):
@@ -106,3 +114,8 @@ def addon_rarity(element):
         )
 
     return rarity_match
+
+
+def browser_user_agent():
+    """Return a random user agent string."""
+    return "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:137.0) Gecko/20100101 Firefox/137.0"

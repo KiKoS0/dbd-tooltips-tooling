@@ -56,10 +56,10 @@ async def main():
         having_translations,
         # {
         #     "ww": {
-        #         "link": "https://deadbydaylight.fandom.com/de/wiki/Der_Ruf_einer_Krankenschwester"
+        #         "link": "https://deadbydaylight.wiki.gg/de/wiki/Der_Ruf_einer_Krankenschwester"
         #     },
         #     "ww2": {
-        #         "link": "https://deadbydaylight.fandom.com/de/wiki/Wir_schaffen_das"
+        #         "link": "https://deadbydaylight.wiki.gg/de/wiki/Wir_schaffen_das"
         #     },
         # },
         get_perk_data_internal,
