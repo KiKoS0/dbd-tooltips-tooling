@@ -1,10 +1,11 @@
-import asyncio
 import json
 from pathlib import Path
 
 import aiohttp
 import requests
 from bs4 import BeautifulSoup
+
+from time import sleep
 
 from dbd_tooling.fetch.shared import (
     DATA_FOLDER_PATH,
@@ -16,21 +17,17 @@ perks_locale_folder_path = f"{DATA_FOLDER_PATH}/locales"
 
 async def get_perks(perks, cb):
     res = {}
-    asynctasks = []
     async with aiohttp.ClientSession() as session:
         for k, v in perks.items():
-            task = get_perk_data(session, v["link"], cb)
-            asynctasks.append(asyncio.create_task(task))
-        task_results = await asyncio.gather(*asynctasks)
+            name, desc = await get_perk_data(session, v["link"], cb)
+            if name and desc:
+                res[k] = v
+                res[k]["name"] = name
+                res[k]["desc"] = desc
 
-    for index, (k, v) in enumerate(perks.items()):
-        res[k] = v
-        (name, desc) = task_results[index]
-        if name and desc:
-            res[k]["name"] = name
-            res[k]["desc"] = desc
-        else:
-            del res[k]
+                sleep(0.4)  # Avoid rate limiting
+            else:
+                continue
     return res
 
 
