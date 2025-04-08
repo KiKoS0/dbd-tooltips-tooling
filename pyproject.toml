@@ -1,20 +1,15 @@
-[tool.poetry]
+[project]
 name = "dbd_tooling"
-version = "0.1.0"
-description = ""
-authors = ["Riadh"]
+version = "1.0.0"
+description = "Tooling for Dead by Daylight Twitch Extension"
 readme = "README.md"
-
-[tool.poetry.dependencies]
-python = "3.11.6"
-beautifulsoup4 = "^4.12.2"
-requests = "^2.31.0"
-asyncio = "^3.4.3"
-aiohttp = "^3.8.6"
-minify-html = "^0.11.1"
-pillow = "^10.1.0"
-python-slugify = "^8.0.1"
-
-[build-system]
-requires = ["poetry-core"]
-build-backend = "poetry.core.masonry.api"
+requires-python = ">=3.11"
+dependencies = [
+    "aiohttp>=3.11.16",
+    "asyncio>=3.4.3",
+    "beautifulsoup4>=4.13.3",
+    "minify-html>=0.16.4",
+    "pillow>=11.1.0",
+    "python-slugify>=8.0.4",
+    "requests>=2.32.3",
+]
