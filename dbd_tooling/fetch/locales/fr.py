@@ -34,8 +34,8 @@ def get_perk_data_internal(soup, link):
         print(name)
 
         return (name, desc)
-    except:
-        print(f"Failed parsing: {link} Skipping...")
+    except Exception as e:
+        print(f"Failed parsing: {link} | error: : {e}")
         return (None, None)
 
 

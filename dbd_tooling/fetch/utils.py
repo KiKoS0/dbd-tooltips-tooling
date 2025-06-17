@@ -86,7 +86,7 @@ def minify(html):
         minify_css=True,
         remove_processing_instructions=True,
         keep_comments=False,
-        keep_spaces_between_attributes=False,
+        allow_removing_spaces_between_attributes=True,
     )
 
 
