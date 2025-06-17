@@ -90,7 +90,7 @@ def minify(html):
     )
 
 
-addon_rarities = ["common", "uncommon", "very-rare", "ultra-rare", "rare"]
+addon_rarities = ["common", "uncommon", "very-rare", "ultra-rare", "rare", "visceral"]
 
 
 def addon_rarity(element):
