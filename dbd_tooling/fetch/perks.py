@@ -130,16 +130,16 @@ def get_perk_data_internal(soup):
 
 
 patch_notes_to_include = [
-    "8.3.0",
-    "8.3.1",
-    "8.3.2",
-    "8.4.0",
-    "8.4.1",
-    "8.4.2",
     "8.5.0",
     "8.5.1",
     "8.5.2",
     "8.6.0",
+    "8.6.1",
+    "8.6.2",
+    "8.7.0",
+    "8.7.1",
+    "8.7.2",
+    "9.0.0",
 ]
 
 
@@ -165,46 +165,46 @@ def get_perk_changelog(soup):
                 res += patch_notes.prettify(formatter="html")
     return (html_to_add + res + "</div>" if res != "" else "", res)
 
+# ASYNC VERSION it's triggering cloudflare rate limiting
+
+# async def get_perks(perks):
+#     res = {}
+#     asynctasks = []
+#     async with aiohttp.ClientSession() as session:
+#         for k, v in perks.items():
+#             task = get_perk_data(session, v["link"])
+#             asynctasks.append(asyncio.create_task(task))
+#         task_results = await asyncio.gather(*asynctasks)
+
+#     for index, (k, v) in enumerate(perks.items()):
+#         res[k] = v
+#         (icon_alt, icon_src, desc, changelogs, locales) = task_results[index]
+#         res[k]["icon_alt"] = icon_alt
+#         res[k]["icon_src"] = icon_src
+#         res[k]["description"] = desc
+#         res[k]["changelogs"] = changelogs
+#         res[k]["locales"] = locales
+#         print(res[k]["icon_alt"])
+#     return res
+
 
 async def get_perks(perks):
     res = {}
-    asynctasks = []
     async with aiohttp.ClientSession() as session:
         for k, v in perks.items():
-            task = get_perk_data(session, v["link"])
-            asynctasks.append(asyncio.create_task(task))
-        task_results = await asyncio.gather(*asynctasks)
+            icon_alt, icon_src, desc, changelogs, locales = await get_perk_data(
+                session, v["link"]
+            )
 
-    for index, (k, v) in enumerate(perks.items()):
-        res[k] = v
-        (icon_alt, icon_src, desc, changelogs, locales) = task_results[index]
-        res[k]["icon_alt"] = icon_alt
-        res[k]["icon_src"] = icon_src
-        res[k]["description"] = desc
-        res[k]["changelogs"] = changelogs
-        res[k]["locales"] = locales
-        print(res[k]["icon_alt"])
+            res[k] = v
+            res[k]["icon_alt"] = icon_alt
+            res[k]["icon_src"] = icon_src
+            res[k]["description"] = desc
+            res[k]["changelogs"] = changelogs
+            res[k]["locales"] = locales
+            print(res[k]["icon_alt"])
+
     return res
-
-
-# # SYNC VERSION FOR DEBUGGING
-# async def get_perks(perks):
-#     res = {}
-#     async with aiohttp.ClientSession() as session:
-#         for k, v in perks.items():
-#             icon_alt, icon_src, desc, changelogs, locales = await get_perk_data(
-#                 session, v["link"]
-#             )
-
-#             res[k] = v
-#             res[k]["icon_alt"] = icon_alt
-#             res[k]["icon_src"] = icon_src
-#             res[k]["description"] = desc
-#             res[k]["changelogs"] = changelogs
-#             res[k]["locales"] = locales
-#             print(res[k]["icon_alt"])
-
-#     return res
 
 
 def save_perks_metadata(perks, file_path):
