@@ -8,6 +8,7 @@ from urllib.request import urljoin
 import aiohttp
 import requests
 from bs4 import BeautifulSoup
+from time import sleep
 
 from dbd_tooling.fetch.shared import (
     DATA_FOLDER_PATH,
@@ -165,6 +166,7 @@ def get_perk_changelog(soup):
                 res += patch_notes.prettify(formatter="html")
     return (html_to_add + res + "</div>" if res != "" else "", res)
 
+
 # ASYNC VERSION it's triggering cloudflare rate limiting
 
 # async def get_perks(perks):
@@ -204,6 +206,8 @@ async def get_perks(perks):
             res[k]["locales"] = locales
             print(res[k]["icon_alt"])
 
+            sleep(1.5)  # Avoid rate limiting
+
     return res
 
 
@@ -237,15 +241,26 @@ async def dl_perk_icon(session, folder_path, k, v):
     return (k, v)
 
 
+# Async version disabled for now because of rate limiting issues
+# async def dl_perks_icons(perks, folder_path):
+#     res = {}
+#     asynctasks = []
+#     async with aiohttp.ClientSession() as session:
+#         for k, v in perks.items():
+#             task = dl_perk_icon(session, folder_path, k, v)
+#             asynctasks.append(asyncio.create_task(task))
+#         task_results = await asyncio.gather(*asynctasks)
+#     res = {key: val for key, val in task_results}
+#     return res
+
+
 async def dl_perks_icons(perks, folder_path):
     res = {}
-    asynctasks = []
     async with aiohttp.ClientSession() as session:
         for k, v in perks.items():
-            task = dl_perk_icon(session, folder_path, k, v)
-            asynctasks.append(asyncio.create_task(task))
-        task_results = await asyncio.gather(*asynctasks)
-    res = {key: val for key, val in task_results}
+            result = await dl_perk_icon(session, folder_path, k, v)
+            res[k] = result
+            sleep(0.1)  # Avoid rate limiting
     return res
 
 

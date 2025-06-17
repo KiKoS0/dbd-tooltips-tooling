@@ -29,8 +29,8 @@ def get_perk_data_internal(soup, link):
 
         desc = rows[0].find_all("td")[0].encode_contents().decode("utf-8")
         return (name, desc)
-    except:
-        print(f"Failed parsing: {link} Skipping...")
+    except Exception as e:
+        print(f"Failed parsing locale perk data from {link}: {e}")
         return (None, None)
 
 

@@ -5,6 +5,8 @@ from pathlib import Path
 from urllib import request
 from urllib.parse import unquote
 from urllib.request import urljoin
+from time import sleep
+
 
 import aiohttp
 import requests
@@ -96,19 +98,30 @@ async def dl_addons_icons(session, k, v):
         res["addons"][addon_id]["img_path"] = generate_addon_img(
             addon_icon_path, addon_folder_path, addon_img_path, rarity
         )
+        sleep(0.1)  # Avoid rate limiting
 
     return (k, res)
 
 
+# Async version disabled for now because of rate limiting issues
+# async def dl_addons_icons_async(killers):
+#     res = {}
+#     asynctasks = []
+#     async with aiohttp.ClientSession() as session:
+#         for k, v in killers.items():
+#             task = dl_addons_icons(session, k, v)
+#             asynctasks.append(asyncio.create_task(task))
+#         task_results = await asyncio.gather(*asynctasks)
+#     res = {key: val for key, val in task_results}
+#     return res
+
+
 async def dl_addons_icons_async(killers):
     res = {}
-    asynctasks = []
     async with aiohttp.ClientSession() as session:
         for k, v in killers.items():
-            task = dl_addons_icons(session, k, v)
-            asynctasks.append(asyncio.create_task(task))
-        task_results = await asyncio.gather(*asynctasks)
-    res = {key: val for key, val in task_results}
+            result = await dl_addons_icons(session, k, v)
+            res[k] = result
     return res
 
 
