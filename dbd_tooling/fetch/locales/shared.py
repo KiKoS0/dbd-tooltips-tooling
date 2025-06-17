@@ -74,9 +74,11 @@ async def get_perk_data(session, link, cb):
                         f.write(str(soup))
                     print(f"Final attempt failed. Exception: {e}")
                     print("HTML content dumped to dump_locale.html")
-                    
-                    # Don't fail entirely, some pages are just broken so just let the cb handle(skip) them
-                    return cb(soup, link)
+
+                    # Don't fail entirely, some pages are just broken so just skip them
+                    print(f"Failed parsing: {link} Skipping... | error: : {e}")
+                    return (None, None)
+
                 raise
 
             # Calculate delay for backoff with jitter

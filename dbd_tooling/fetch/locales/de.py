@@ -17,21 +17,17 @@ killers_locale_perks_json = f"{perks_locale_folder_path}/killers_de.json"
 
 
 def get_perk_data_internal(soup, link):
-    try:
-        tables = soup.find_all("table", {"class": "wikitable"})
-        perk_table = tables[0]
-        rows = perk_table.find_all("tr")
+    tables = soup.find_all("table", {"class": "wikitable"})
+    perk_table = tables[0]
+    rows = perk_table.find_all("tr")
 
-        name_row = rows[0].find_all("th")[1]
+    name_row = rows[0].find_all("th")[1]
 
-        name = try_get_name(name_row)
-        print(name)
+    name = try_get_name(name_row)
+    print(name)
 
-        desc = rows[0].find_all("td")[0].encode_contents().decode("utf-8")
-        return (name, desc)
-    except Exception as e:
-        print(f"Failed parsing locale perk data from {link}: {e}")
-        return (None, None)
+    desc = rows[0].find_all("td")[0].encode_contents().decode("utf-8")
+    return (name, desc)
 
 
 def try_get_name(name_row):
