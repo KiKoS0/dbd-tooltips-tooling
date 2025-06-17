@@ -25,7 +25,7 @@ async def get_perks(perks, cb):
                 res[k]["name"] = name
                 res[k]["desc"] = desc
 
-                sleep(0.4)  # Avoid rate limiting
+                sleep(1)  # Avoid rate limiting
             else:
                 continue
     return res
