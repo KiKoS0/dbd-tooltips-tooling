@@ -8,7 +8,7 @@ from urllib.request import urljoin
 import aiohttp
 import requests
 from bs4 import BeautifulSoup
-from time import sleep
+import random
 
 from dbd_tooling.fetch.shared import (
     DATA_FOLDER_PATH,
@@ -74,16 +74,62 @@ def get_table_rows(table):
 
 
 async def get_perk_data(session, rel_link):
-    link = urljoin(PERKS_URL, rel_link)
-    try:
-        async with session.get(link, max_redirects=30) as page:
-            soup = BeautifulSoup(await page.text(), "html.parser")
-            return get_perk_data_internal(soup)
+    headers = {
+        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:139.0) Gecko/20100101 Firefox/139.0",
+    }
 
-    except aiohttp.client_exceptions.TooManyRedirects:
-        page = requests.get(link, timeout=30)
-        soup = BeautifulSoup(page.text, "html.parser")
-        return get_perk_data_internal(soup)
+    link = urljoin(PERKS_URL, rel_link)
+    soup = None
+    max_retries = 5
+    base_delay = 1  # Start with 1 second
+    total_wait = 0
+    max_total_wait = 45
+
+    for attempt in range(max_retries + 1):
+        # Add random delay between 0.5-2 seconds to appear more human
+        if attempt > 0:
+            human_delay = random.uniform(0.5, 2.0)
+            await asyncio.sleep(human_delay)
+
+        try:
+            async with session.get(link, headers=headers, max_redirects=30) as page:
+                soup = BeautifulSoup(await page.text(), "html.parser")
+                return get_perk_data_internal(soup)
+        except aiohttp.client_exceptions.TooManyRedirects:
+            # Use requests with same randomized headers
+            requests_headers = headers.copy()
+            page = requests.get(link, headers=requests_headers, timeout=30)
+            soup = BeautifulSoup(page.text, "html.parser")
+            return get_perk_data_internal(soup)
+        except Exception as e:
+            if attempt == max_retries:
+                # Final attempt failed - dump soup and raise
+                if soup is not None:
+                    with open("debug.html", "w", encoding="utf-8") as f:
+                        f.write(str(soup))
+                    print(f"Final attempt failed. Exception: {e}")
+                    print("HTML content dumped to debug.html")
+                raise
+
+            # Calculate delay for backoff with jitter
+            base_backoff = base_delay * (2**attempt)
+            jitter = random.uniform(0.8, 1.2)  # Add 20% jitter
+            delay = min(base_backoff * jitter, max_total_wait - total_wait)
+            if total_wait + delay > max_total_wait:
+                delay = max_total_wait - total_wait
+
+            if delay <= 0:
+                # No more time left for retries
+                if soup is not None:
+                    with open("debug.html", "w", encoding="utf-8") as f:
+                        f.write(str(soup))
+                    print(f"Max wait time exceeded. Exception: {e}")
+                    print("HTML content dumped to debug.html")
+                raise
+
+            print(f"Attempt {attempt + 1} failed: {e}. Retrying in {delay} seconds...")
+            await asyncio.sleep(delay)
+            total_wait += delay
 
 
 def get_perk_data_internal(soup):
@@ -167,47 +213,24 @@ def get_perk_changelog(soup):
     return (html_to_add + res + "</div>" if res != "" else "", res)
 
 
-# ASYNC VERSION it's triggering cloudflare rate limiting
-
-# async def get_perks(perks):
-#     res = {}
-#     asynctasks = []
-#     async with aiohttp.ClientSession() as session:
-#         for k, v in perks.items():
-#             task = get_perk_data(session, v["link"])
-#             asynctasks.append(asyncio.create_task(task))
-#         task_results = await asyncio.gather(*asynctasks)
-
-#     for index, (k, v) in enumerate(perks.items()):
-#         res[k] = v
-#         (icon_alt, icon_src, desc, changelogs, locales) = task_results[index]
-#         res[k]["icon_alt"] = icon_alt
-#         res[k]["icon_src"] = icon_src
-#         res[k]["description"] = desc
-#         res[k]["changelogs"] = changelogs
-#         res[k]["locales"] = locales
-#         print(res[k]["icon_alt"])
-#     return res
-
-
 async def get_perks(perks):
     res = {}
+    asynctasks = []
     async with aiohttp.ClientSession() as session:
         for k, v in perks.items():
-            icon_alt, icon_src, desc, changelogs, locales = await get_perk_data(
-                session, v["link"]
-            )
+            task = get_perk_data(session, v["link"])
+            asynctasks.append(asyncio.create_task(task))
+        task_results = await asyncio.gather(*asynctasks)
 
-            res[k] = v
-            res[k]["icon_alt"] = icon_alt
-            res[k]["icon_src"] = icon_src
-            res[k]["description"] = desc
-            res[k]["changelogs"] = changelogs
-            res[k]["locales"] = locales
-            print(res[k]["icon_alt"])
-
-            sleep(1.5)  # Avoid rate limiting
-
+    for index, (k, v) in enumerate(perks.items()):
+        res[k] = v
+        (icon_alt, icon_src, desc, changelogs, locales) = task_results[index]
+        res[k]["icon_alt"] = icon_alt
+        res[k]["icon_src"] = icon_src
+        res[k]["description"] = desc
+        res[k]["changelogs"] = changelogs
+        res[k]["locales"] = locales
+        print(res[k]["icon_alt"])
     return res
 
 
@@ -241,26 +264,15 @@ async def dl_perk_icon(session, folder_path, k, v):
     return (k, v)
 
 
-# Async version disabled for now because of rate limiting issues
-# async def dl_perks_icons(perks, folder_path):
-#     res = {}
-#     asynctasks = []
-#     async with aiohttp.ClientSession() as session:
-#         for k, v in perks.items():
-#             task = dl_perk_icon(session, folder_path, k, v)
-#             asynctasks.append(asyncio.create_task(task))
-#         task_results = await asyncio.gather(*asynctasks)
-#     res = {key: val for key, val in task_results}
-#     return res
-
-
 async def dl_perks_icons(perks, folder_path):
     res = {}
+    asynctasks = []
     async with aiohttp.ClientSession() as session:
         for k, v in perks.items():
-            result = await dl_perk_icon(session, folder_path, k, v)
-            res[k] = result
-            sleep(0.1)  # Avoid rate limiting
+            task = dl_perk_icon(session, folder_path, k, v)
+            asynctasks.append(asyncio.create_task(task))
+        task_results = await asyncio.gather(*asynctasks)
+    res = {key: val for key, val in task_results}
     return res
 
 
