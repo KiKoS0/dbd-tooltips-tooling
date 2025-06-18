@@ -142,11 +142,11 @@ def get_perk_data_internal(soup):
     desc += wrapped_changelogs
 
     all_matches = link_src_reg.findall(desc)
-    _ = [icons.add(m[0]) for m in all_matches]
+    _ = [absolute_link(m[0]) for m in all_matches]
     desc = re.sub(link_src_reg, lambda x: f'src="images/icons/{x.group(2)}"', desc)
 
     all_matches = link_src_reg.findall(changelogs)
-    _ = [icons.add(m[0]) for m in all_matches]
+    _ = [absolute_link(m[0]) for m in all_matches]
     changelogs = fix_description_icons(changelogs)
     changelogs = re.sub(
         LINK_SRC_PATTERN, lambda x: f'src="images/icons/{x.group(2)}"', changelogs
