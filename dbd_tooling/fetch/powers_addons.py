@@ -177,7 +177,7 @@ def get_killer_addons(soup):
         addon_description = addon_description.encode_contents().decode("utf-8")
 
         all_matches = link_src_reg.findall(addon_description)
-        _ = [absolute_link(m[0]) for m in all_matches]
+        _ = [icons.add(absolute_link(m[0])) for m in all_matches]
         addon_description = re.sub(
             LINK_SRC_PATTERN,
             lambda x: f'src="images/icons/{x.group(2)}"',

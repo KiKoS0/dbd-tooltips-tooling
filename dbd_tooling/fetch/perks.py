@@ -142,11 +142,11 @@ def get_perk_data_internal(soup):
     desc += wrapped_changelogs
 
     all_matches = link_src_reg.findall(desc)
-    _ = [absolute_link(m[0]) for m in all_matches]
+    _ = [icons.add(absolute_link(m[0])) for m in all_matches]
     desc = re.sub(link_src_reg, lambda x: f'src="images/icons/{x.group(2)}"', desc)
 
     all_matches = link_src_reg.findall(changelogs)
-    _ = [absolute_link(m[0]) for m in all_matches]
+    _ = [icons.add(absolute_link(m[0])) for m in all_matches]
     changelogs = fix_description_icons(changelogs)
     changelogs = re.sub(
         LINK_SRC_PATTERN, lambda x: f'src="images/icons/{x.group(2)}"', changelogs
@@ -291,16 +291,6 @@ async def main():
         raise RuntimeError("More than 2 tables in the wiki found")
     surv_table, kill_table = [res[0], res[1]]
     surv_perks, _surv_characters = get_table_rows(surv_table)
-    kill_perks, _kill_characters = get_table_rows(kill_table)
-
-    if not file_exists(killers_perks_json):
-        kill_perks = await get_perks(kill_perks)
-    else:
-        kill_perks = read_json_dic(killers_perks_json)
-
-    kill_perks = await dl_perks_icons(kill_perks, killers_perks_path)
-
-    save_perks_metadata(kill_perks, killers_perks_json)
 
     if not file_exists(survivors_perks_json):
         surv_perks = await get_perks(surv_perks)
@@ -311,6 +301,7 @@ async def main():
 
     save_perks_metadata(surv_perks, survivors_perks_json)
 
+    print("ICONS")
     for i in icons:
         print(i)
 
