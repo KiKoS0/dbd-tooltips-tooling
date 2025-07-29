@@ -177,9 +177,6 @@ def get_perk_data_internal(soup):
 
 
 patch_notes_to_include = [
-    "8.5.0",
-    "8.5.1",
-    "8.5.2",
     "8.6.0",
     "8.6.1",
     "8.6.2",
@@ -187,6 +184,8 @@ patch_notes_to_include = [
     "8.7.1",
     "8.7.2",
     "9.0.0",
+    "9.0.1",
+    "9.0.2",
 ]
 
 
