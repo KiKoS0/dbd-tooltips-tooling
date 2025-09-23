@@ -118,7 +118,23 @@ def addon_rarity(element):
 
 def browser_user_agent():
     """Return a random user agent string."""
-    return "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:137.0) Gecko/20100101 Firefox/137.0"
+    return "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
+
+
+def browser_headers():
+    """Return simple headers that work like wget."""
+    return {
+        "User-Agent": "Wget/1.21",
+        "Accept": "*/*",
+        "Accept-Encoding": "identity",
+        "Connection": "Keep-Alive",
+    }
+
+
+def get_test_limit():
+    """Get test limit from environment variable."""
+    import os
+    return int(os.environ.get('DBD_TEST_LIMIT', 999999))
 
 
 def remove_extension_if_exists(path: str) -> str:

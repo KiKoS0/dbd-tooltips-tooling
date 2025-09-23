@@ -10,7 +10,7 @@ import random
 from dbd_tooling.fetch.shared import (
     DATA_FOLDER_PATH,
 )
-from dbd_tooling.fetch.utils import file_exists
+from dbd_tooling.fetch.utils import file_exists, get_test_limit
 
 perks_locale_folder_path = f"{DATA_FOLDER_PATH}/locales"
 
@@ -18,7 +18,10 @@ perks_locale_folder_path = f"{DATA_FOLDER_PATH}/locales"
 async def get_perks(perks, cb):
     res = {}
     async with aiohttp.ClientSession() as session:
-        for k, v in perks.items():
+        for i, (k, v) in enumerate(perks.items()):
+            if i >= get_test_limit():
+                break
+            await asyncio.sleep(1.0)
             name, desc = await get_perk_data(session, v["link"], cb)
             if name and desc:
                 res[k] = v
@@ -43,7 +46,7 @@ def save_perks_metadata(perks, file_path):
 
 async def get_perk_data(session, link, cb):
     headers = {
-        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:139.0) Gecko/20100101 Firefox/139.0",
+        "User-Agent": "SiteSucker/3.2.6",
     }
 
     soup = None
@@ -53,7 +56,6 @@ async def get_perk_data(session, link, cb):
     max_total_wait = 45
 
     for attempt in range(max_retries + 1):
-        # Add random delay between 0.5-2 seconds to appear more human
         if attempt > 0:
             human_delay = random.uniform(0.5, 2.0)
             await asyncio.sleep(human_delay)

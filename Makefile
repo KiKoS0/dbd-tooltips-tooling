@@ -7,9 +7,24 @@ clean:
 .PHONY: clean_fetch
 clean_fetch:
 	make clean fetch
-	sort -u data/icons.txt -o data/icons.txt	
+	sort -u data/icons.txt -o data/icons.txt
 	uv run python -m dbd_tooling.fetch.icons
 	rm -rf data/icons.txt
+
+LIMIT ?= 3
+
+.PHONY: clean_test
+clean_test:
+	make clean
+	DBD_TEST_LIMIT=$(LIMIT) uv run python -m dbd_tooling.fetch.perks
+	DBD_TEST_LIMIT=$(LIMIT) uv run python -m dbd_tooling.fetch.powers_addons
+	uv run python -m dbd_tooling.fetch.cleanup
+
+	uv run python -m dbd_tooling.aux.locale_gen
+	DBD_TEST_LIMIT=$(LIMIT) uv run python -m dbd_tooling.fetch.locales.fr
+	DBD_TEST_LIMIT=$(LIMIT) uv run python -m dbd_tooling.fetch.locales.de
+	uv run python -m dbd_tooling.features.gen_feature_flags
+	cp -r static/. data/
 
 .PHONY: fetch
 fetch:

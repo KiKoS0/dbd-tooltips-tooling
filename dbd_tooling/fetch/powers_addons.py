@@ -27,6 +27,7 @@ from dbd_tooling.fetch.utils import (
     file_exists,
     slugify,
     absolute_link,
+    get_test_limit,
 )
 
 icons = set()
@@ -34,7 +35,10 @@ icons = set()
 
 def get_killer_powers(characters):
     res = {}
-    for k, v in characters.items():
+    for i, (k, v) in enumerate(characters.items()):
+        if i >= get_test_limit():
+            break
+        print(f"Processing killer: {k}")
         res[k] = v
         res[k]["power_name"], res[k]["power_imgs"], res[k]["addons"] = get_killers_data(
             v["link"]
@@ -79,14 +83,20 @@ async def dl_addons_icons(session, k, v):
         if img_link is None:
             raise RuntimeError(f"Possibly missing image: {img_link}")
         if not file_exists(addon_icon_path):
+            await asyncio.sleep(0.5)
             print(f"Downloading {img_link}")
             try:
-                async with session.get(img_link) as resp:
+                headers = {"User-Agent": "SiteSucker/3.2.6"}
+                async with session.get(img_link, headers=headers) as resp:
+                    if resp.status == 429:
+                        print(f"Rate limited on {img_link}")
+                        raise Exception(f"Rate limited: {resp.status}")
+                    resp.raise_for_status()
                     f = open(addon_icon_path, "wb")
                     f.write(await resp.read())
                     f.close()
-            except:
-                print(f"Failed to download: {img_link}\nPath: {addon_icon_path}")
+            except Exception as e:
+                print(f"Failed to download: {img_link}\nPath: {addon_icon_path}\nError: {e}")
                 raise
         else:
             print(f"Exists: {img_link}")
@@ -103,13 +113,11 @@ async def dl_addons_icons(session, k, v):
 
 async def dl_addons_icons_async(killers):
     res = {}
-    asynctasks = []
     async with aiohttp.ClientSession() as session:
         for k, v in killers.items():
-            task = dl_addons_icons(session, k, v)
-            asynctasks.append(asyncio.create_task(task))
-        task_results = await asyncio.gather(*asynctasks)
-    res = {key: val for key, val in task_results}
+            await asyncio.sleep(1.0)
+            key, val = await dl_addons_icons(session, k, v)
+            res[key] = val
     return res
 
 
@@ -126,14 +134,26 @@ def fix_nemesis_link(link):
 
 
 def get_killers_data(link):
+    import time
+    time.sleep(1.0)
+
     link = fix_nemesis_link(link)
     print(link)
     link = urljoin(PERKS_URL, link)
-    page = requests.get(link, timeout=30)
+    headers = {"User-Agent": "SiteSucker/3.2.6"}
+    page = requests.get(link, headers=headers, timeout=30)
     soup = BeautifulSoup(page.text, "html.parser")
     regex = re.compile(r"Power:_(.*)$")
     name_regex = re.compile(r"Power: (.*)$")
     power_spans = soup.find_all("span", {"id": regex})
+
+    print(f"Found {len(power_spans)} power spans")
+    if len(power_spans) == 0:
+        print("No power spans found! Page content might be different")
+        with open("debug_killer.html", "w", encoding="utf-8") as f:
+            f.write(soup.prettify())
+        raise Exception(f"No power spans found for {link}")
+
     correct_span = power_spans[0] if len(power_spans) < 2 else power_spans[1]
     power_name = name_regex.match(correct_span.text.strip()).group(1)
 

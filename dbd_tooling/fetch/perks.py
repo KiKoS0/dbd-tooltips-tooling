@@ -30,6 +30,7 @@ from dbd_tooling.fetch.utils import (
     remove_extension_if_exists,
     slugify,
     absolute_link,
+    get_test_limit,
 )
 
 icons = set()
@@ -75,7 +76,7 @@ def get_table_rows(table):
 
 async def get_perk_data(session, rel_link):
     headers = {
-        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:139.0) Gecko/20100101 Firefox/139.0",
+        "User-Agent": "SiteSucker/3.2.6",
     }
 
     link = urljoin(PERKS_URL, rel_link)
@@ -86,7 +87,6 @@ async def get_perk_data(session, rel_link):
     max_total_wait = 45
 
     for attempt in range(max_retries + 1):
-        # Add random delay between 0.5-2 seconds to appear more human
         if attempt > 0:
             human_delay = random.uniform(0.5, 2.0)
             await asyncio.sleep(human_delay)
@@ -216,22 +216,31 @@ def get_perk_changelog(soup):
 
 async def get_perks(perks):
     res = {}
-    asynctasks = []
     async with aiohttp.ClientSession() as session:
-        for k, v in perks.items():
-            task = get_perk_data(session, v["link"])
-            asynctasks.append(asyncio.create_task(task))
-        task_results = await asyncio.gather(*asynctasks)
+        for i, (k, v) in enumerate(perks.items()):
+            if i >= get_test_limit():
+                break
+            print(f"Processing perk: {k}")
+            try:
+                await asyncio.sleep(1.0)
 
-    for index, (k, v) in enumerate(perks.items()):
-        res[k] = v
-        (icon_alt, icon_src, desc, changelogs, locales) = task_results[index]
-        res[k]["icon_alt"] = icon_alt
-        res[k]["icon_src"] = icon_src
-        res[k]["description"] = desc
-        res[k]["changelogs"] = changelogs
-        res[k]["locales"] = locales
-        print(res[k]["icon_alt"])
+                (icon_alt, icon_src, desc, changelogs, locales) = await get_perk_data(session, v["link"])
+
+                res[k] = v
+                res[k]["icon_alt"] = icon_alt
+                res[k]["icon_src"] = icon_src
+                res[k]["description"] = desc
+                res[k]["changelogs"] = changelogs
+                res[k]["locales"] = locales
+                print(f"✓ {res[k]['icon_alt']}")
+            except Exception as e:
+                print(f"✗ Failed to process {k}: {e}")
+                res[k] = v
+                res[k]["icon_alt"] = None
+                res[k]["icon_src"] = None
+                res[k]["description"] = "Failed to fetch"
+                res[k]["changelogs"] = ""
+                res[k]["locales"] = {}
     return res
 
 
@@ -252,10 +261,31 @@ async def dl_perk_icon(session, folder_path, k, v):
         icon_path = f"{perk_folder_path}/{v['icon_alt']}.png"
         if not file_exists(icon_path):
             print(f"Downloading {v['icon_src']}")
-            async with session.get(v["icon_src"]) as resp:
-                f = open(icon_path, "wb")
-                f.write(await resp.read())
-                f.close()
+            max_retries = 3
+            for attempt in range(max_retries + 1):
+                try:
+                    headers = {"User-Agent": "SiteSucker/3.2.6"}
+                    async with session.get(v["icon_src"], headers=headers) as resp:
+                        if resp.status == 429:
+                            if attempt < max_retries:
+                                delay = 2.0 * (2 ** attempt)
+                                print(f"Rate limited, retrying in {delay}s...")
+                                await asyncio.sleep(delay)
+                                continue
+                            else:
+                                raise Exception(f"Rate limited after {max_retries} retries")
+                        resp.raise_for_status()
+                        f = open(icon_path, "wb")
+                        f.write(await resp.read())
+                        f.close()
+                        break
+                except Exception as e:
+                    if attempt == max_retries:
+                        print(f"Failed to download {v['icon_src']}: {e}")
+                        raise
+                    delay = 1.0 * (2 ** attempt)
+                    print(f"Download failed (attempt {attempt + 1}), retrying in {delay}s...")
+                    await asyncio.sleep(delay)
 
         res["frames"] = generate_perk_frames(icon_path, perk_folder_path)
         res["icon"] = icon_path
@@ -267,13 +297,11 @@ async def dl_perk_icon(session, folder_path, k, v):
 
 async def dl_perks_icons(perks, folder_path):
     res = {}
-    asynctasks = []
     async with aiohttp.ClientSession() as session:
         for k, v in perks.items():
-            task = dl_perk_icon(session, folder_path, k, v)
-            asynctasks.append(asyncio.create_task(task))
-        task_results = await asyncio.gather(*asynctasks)
-    res = {key: val for key, val in task_results}
+            await asyncio.sleep(0.1)
+            key, val = await dl_perk_icon(session, folder_path, k, v)
+            res[key] = val
     return res
 
 
