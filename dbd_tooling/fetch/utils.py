@@ -70,6 +70,13 @@ def fix_description_icons(html):
     for span in sp.find_all("span", {"class": "pcView pcIconLink"}):
         span["style"] = "display: none;" + span.get("style", "")
 
+    # Fix getIconShrinker spans to use 32px width and height
+    for span in sp.find_all("span", {"class": "getIconShrinker"}):
+        img = span.find("img")
+        if img:
+            img["width"] = "32"
+            img["height"] = "32"
+
     return sp.prettify(formatter="html")
 
 
