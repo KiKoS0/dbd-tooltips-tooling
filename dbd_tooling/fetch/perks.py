@@ -57,11 +57,15 @@ def get_table_rows(table):
         perk_character = (
             columns[2].find("a")["title"].strip() if columns[2].find("a") else "ALL"
         )
+        perk_character_link = (
+            columns[2].find("a")["href"] if columns[2].find("a") else ""
+        )
         if perk_id not in skip_perks:
             perks[perk_id] = {
                 "name": perk_name,
                 "link": perk_link,
                 "character": perk_character,
+                "character_link": perk_character_link,
             }
         if link := columns[2].find("a"):
             character_href = link["href"]
@@ -225,7 +229,9 @@ async def get_perks(perks):
             try:
                 await asyncio.sleep(1.0)
 
-                (icon_alt, icon_src, desc, changelogs, locales) = await get_perk_data(session, v["link"])
+                (icon_alt, icon_src, desc, changelogs, locales) = await get_perk_data(
+                    session, v["link"]
+                )
 
                 res[k] = v
                 res[k]["icon_alt"] = icon_alt
@@ -269,12 +275,14 @@ async def dl_perk_icon(session, folder_path, k, v):
                     async with session.get(v["icon_src"], headers=headers) as resp:
                         if resp.status == 429:
                             if attempt < max_retries:
-                                delay = 2.0 * (2 ** attempt)
+                                delay = 2.0 * (2**attempt)
                                 print(f"Rate limited, retrying in {delay}s...")
                                 await asyncio.sleep(delay)
                                 continue
                             else:
-                                raise Exception(f"Rate limited after {max_retries} retries")
+                                raise Exception(
+                                    f"Rate limited after {max_retries} retries"
+                                )
                         resp.raise_for_status()
                         f = open(icon_path, "wb")
                         f.write(await resp.read())
@@ -284,8 +292,10 @@ async def dl_perk_icon(session, folder_path, k, v):
                     if attempt == max_retries:
                         print(f"Failed to download {v['icon_src']}: {e}")
                         raise
-                    delay = 1.0 * (2 ** attempt)
-                    print(f"Download failed (attempt {attempt + 1}), retrying in {delay}s...")
+                    delay = 1.0 * (2**attempt)
+                    print(
+                        f"Download failed (attempt {attempt + 1}), retrying in {delay}s..."
+                    )
                     await asyncio.sleep(delay)
 
         res["frames"] = generate_perk_frames(icon_path, perk_folder_path)
